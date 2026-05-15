@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运动健康 Agent · Onboarding 交互原型</title>
+<style>
+:root {
+  --primary: #0EA5E9;
+  --primary-dark: #0284C7;
+  --indigo: #6366F1;
+  --bg: #E8EDF2;
+  --white: #FFFFFF;
+  --agent-bubble: #F1F5F9;
+  --agent-text: #1E293B;
+  --border: #E2E8F0;
+  --muted: #64748B;
+  --green: #10B981;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Helvetica Neue', sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px;
+  gap: 28px;
+}
+
+/* ── PHONE FRAME ─────────────────────────────────────── */
+.phone-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.phone-label {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.phone {
+  width: 375px;
+  height: 812px;
+  background: #fff;
+  border-radius: 50px;
+  box-shadow:
+    0 0 0 10px #1A1A1A,
+    0 0 0 11px #3A3A3A,
+    0 32px 72px rgba(0,0,0,0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Notch */
+.notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 28px;
+  background: #1A1A1A;
+  border-radius: 0 0 18px 18px;
+  z-index: 10;
+}
+
+/* Status bar */
+.status-bar {
+  background: var(--white);
+  padding: 14px 28px 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 18px;
+}
+.status-time { font-size: 15px; font-weight: 700; color: #0F172A; }
+.status-icons { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #0F172A; }
+
+/* App header */
+.app-header {
+  background: var(--white);
+  padding: 10px 22px 14px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.progress-steps {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+}
+.progress-dot {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background 0.5s ease;
+}
+.progress-dot.done { background: var(--primary); }
+.progress-dot.active { background: var(--primary); opacity: 0.5; }
+
+.progress-text {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.stage-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--agent-text);
+  transition: opacity 0.3s;
+}
+.stage-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  transition: opacity 0.3s;
+}
+
+/* Messages area */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 8px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+.messages::-webkit-scrollbar { display: none; }
+
+/* Message bubbles */
+.msg {
+  margin-bottom: 10px;
+  animation: msgIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.msg.agent { display: flex; align-items: flex-end; gap: 7px; }
+.msg.user  { display: flex; justify-content: flex-end; }
+
+.avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--indigo));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.bubble {
+  max-width: 78%;
+  padding: 9px 13px;
+  border-radius: 17px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.agent .bubble {
+  background: var(--agent-bubble);
+  color: var(--agent-text);
+  border-bottom-left-radius: 4px;
+}
+.user .bubble {
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+  font-size: 13px;
+}
+
+/* Typing indicator */
+.typing-wrap {
+  display: flex; align-items: flex-end; gap: 7px;
+  margin-bottom: 10px;
+  animation: msgIn 0.2s ease both;
+}
+.typing-bubble {
+  background: var(--agent-bubble);
+  padding: 11px 14px;
+  border-radius: 17px;
+  border-bottom-left-radius: 4px;
+  display: flex; gap: 4px; align-items: center;
+}
+.typing-bubble i {
+  display: block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #94A3B8;
+  animation: tdot 1.2s ease-in-out infinite;
+}
+.typing-bubble i:nth-child(2) { animation-delay: 0.18s; }
+.typing-bubble i:nth-child(3) { animation-delay: 0.36s; }
+@keyframes tdot {
+  0%,60%,100% { transform: translateY(0); background: #94A3B8; }
+  30% { transform: translateY(-5px); background: var(--primary); }
+}
+
+/* ── INTERACTION AREA ────────────────────────────────── */
+.interaction {
+  padding: 12px 14px 20px;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 200px;
+  max-height: 310px;
+  overflow-y: auto;
+}
+.interaction::-webkit-scrollbar { display: none; }
+
+/* Fade-in for interaction content */
+.interaction-inner {
+  animation: fadeUp 0.3s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── MOOD GRID (Apple Health style) ─────────────────── */
+.mood-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.mood-card {
+  border-radius: 18px;
+  padding: 13px 6px 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  border: 2.5px solid transparent;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s, opacity 0.25s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mood-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+.mood-card:active { transform: scale(0.94); }
+.mood-card.selected {
+  border-color: rgba(255,255,255,0.9);
+  box-shadow: 0 0 0 3px var(--primary), 0 6px 20px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+}
+.mood-card.dimmed { opacity: 0.38; pointer-events: none; }
+
+.mood-card .mood-emoji {
+  font-size: 28px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
+}
+.mood-card .mood-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.97);
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+.mood-card .mood-desc {
+  font-size: 10px;
+  color: rgba(255,255,255,0.72);
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ── OPTION LIST ─────────────────────────────────────── */
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opt-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  background: var(--white);
+  text-align: left;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, opacity 0.25s, transform 0.15s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.opt-btn:hover { border-color: var(--primary); background: #F0F7FF; }
+.opt-btn:active { transform: scale(0.98); }
+.opt-btn.selected { border-color: var(--primary); background: #EFF6FF; }
+.opt-btn.dimmed { opacity: 0.38; pointer-events: none; }
+
+.opt-icon { font-size: 20px; flex-shrink: 0; }
+.opt-text { flex: 1; min-width: 0; }
+.opt-main { font-size: 13px; font-weight: 500; color: var(--agent-text); }
+.opt-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* ── SUMMARY CARD ────────────────────────────────────── */
+.summary-card {
+  background: linear-gradient(135deg, #0EA5E9 0%, #6366F1 100%);
+  border-radius: 16px;
+  padding: 14px 16px;
+  color: #fff;
+  margin-bottom: 10px;
+}
+.summary-card h4 {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.8;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.summary-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+.summary-row:last-child { border-bottom: none; }
+.summary-row .si { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+.action-btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.action-btn:hover { background: var(--primary-dark); }
+.action-btn:active { transform: scale(0.98); }
+.action-btn.success { background: var(--green); }
+
+/* ── NOTES PANEL ─────────────────────────────────────── */
+.notes-panel {
+  width: 280px;
+  flex-shrink: 0;
+  padding-top: 44px;
+}
+
+.notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.notes-header h2 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--agent-text);
+  letter-spacing: 0.02em;
+}
+.restart-btn {
+  font-size: 11px;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: none;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.restart-btn:hover { background: #EFF6FF; }
+
+.stage-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.pill {
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-family: inherit;
+}
+.pill.active { background: var(--primary); color: #fff; }
+
+.note-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  animation: fadeUp 0.3s ease both;
+}
+.note-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--agent-text);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.note-card-title::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 12px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+.note-item {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.55;
+  color: #475569;
+}
+.note-item:last-child { border-bottom: none; padding-bottom: 0; }
+.note-item b { color: var(--agent-text); display: block; margin-bottom: 2px; }
+
+.ref-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: 4px;
+  margin-top: 3px;
+}
+.ref-apple  { background: #F1F5F9; color: #334155; }
+.ref-noom   { background: #FFF7ED; color: #9A3412; }
+.ref-future { background: #F0FDF4; color: #166534; }
+.ref-head   { background: #FEF3C7; color: #92400E; }
+
+/* ── RESPONSIVE ──────────────────────────────────────── */
+@media (max-width: 720px) {
+  body { flex-direction: column; align-items: center; padding: 16px; }
+  .notes-panel { width: 100%; max-width: 375px; padding-top: 0; }
+}
+@media (max-width: 400px) {
+  .phone { width: 100%; height: auto; border-radius: 0; box-shadow: none; }
+  body { padding: 0; background: #fff; }
+}
+</style>
+</head>
+<body>
+
+<!-- ──────────── PHONE ──────────── -->
+<div class="phone-wrap">
+  <p class="phone-label">交互原型 · 可操作</p>
+  <div class="phone">
+    <div class="notch"></div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="4" width="3" height="7" rx="1"/><rect x="4.5" y="2.5" width="3" height="8.5" rx="1"/><rect x="9" y="0.5" width="3" height="10.5" rx="1"/><rect x="13.5" y="0" width="2.5" height="11" rx="1" opacity="0.3"/></svg>
+        <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2.2C5.2 2.2 3.1 3.1 1.5 4.6L0 3.1C1.9 1.2 4.6 0 7.5 0s5.6 1.2 7.5 3.1L13.5 4.6C11.9 3.1 9.8 2.2 7.5 2.2z" opacity="0.4"/><path d="M7.5 5.5c-1.4 0-2.7.5-3.7 1.4L2.3 5.4C3.7 4.2 5.5 3.4 7.5 3.4s3.8.8 5.2 2l-1.5 1.5C10.2 6 8.9 5.5 7.5 5.5z"/><circle cx="7.5" cy="9" r="1.7"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor"><rect x="0" y="1" width="21" height="10" rx="2.5" stroke="currentColor" stroke-width="1" fill="none" opacity="0.35"/><rect x="1.5" y="2.5" width="16" height="7" rx="1.5" fill="currentColor"/><rect x="22" y="4" width="2.5" height="4" rx="1.25" opacity="0.4"/></svg>
+      </div>
+    </div>
+
+    <!-- App header -->
+    <div class="app-header">
+      <div class="progress-row">
+        <div class="progress-steps" id="progressSteps">
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <span class="progress-text" id="progressText">1 / 5</span>
+      </div>
+      <div class="stage-title" id="stageTitle">情感切入</div>
+      <div class="stage-subtitle" id="stageSub">了解你此刻的状态</div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages" id="messages"></div>
+
+    <!-- Interaction -->
+    <div class="interaction" id="interaction"></div>
+  </div>
+</div>
+
+<!-- ──────────── NOTES PANEL ──────────── -->
+<div class="notes-panel" id="notesPanel">
+  <div class="notes-header">
+    <h2>设计说明</h2>
+    <button class="restart-btn" onclick="restart()">↺ 重新开始</button>
+  </div>
+  <div class="stage-pills" id="stagePills"></div>
+  <div id="notesContent"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+
+const MOODS = [
+  {
+    id: 'anticipating', emoji: '✨', name: '充满期待', desc: '对改变充满好奇',
+    bg: 'linear-gradient(145deg, #F59E0B 0%, #EF4444 100%)',
+    reply: '这种期待感太好了！带着这个状态，我们能走得很远。\n\n接下来，告诉我你来这里最主要的原因。'
+  },
+  {
+    id: 'determined', emoji: '💪', name: '下定决心', desc: '这次一定要坚持',
+    bg: 'linear-gradient(145deg, #6366F1 0%, #8B5CF6 100%)',
+    reply: '下定决心——这是最好的状态。\n\n上次停下来的事，这次我们在设计上就绕开它。先告诉我你最想解决什么。'
+  },
+  {
+    id: 'lost', emoji: '🌫', name: '有点迷茫', desc: '不知从哪里开始',
+    bg: 'linear-gradient(145deg, #64748B 0%, #94A3B8 100%)',
+    reply: '迷茫其实是很诚实的感受。不知道从哪里开始，比"不想开始"好多了。\n\n我们慢慢来，一起找方向。'
+  },
+  {
+    id: 'stressed', emoji: '😮‍💨', name: '压力很大', desc: '工作生活都很忙',
+    bg: 'linear-gradient(145deg, #EC4899 0%, #F43F5E 100%)',
+    reply: '压力大的时候还来了，需要勇气。\n\n运动本来是释压的好方式——前提是不给你再添压力。我会记住这一点。'
+  },
+  {
+    id: 'tired_hopeful', emoji: '🌱', name: '想要改变', desc: '累了，但想试试',
+    bg: 'linear-gradient(145deg, #10B981 0%, #0D9488 100%)',
+    reply: '累着还是来了。\n\n这种"想改变"的感觉，比你想象的更珍贵。我们从小的、可持续的步子开始。'
+  },
+  {
+    id: 'curious', emoji: '👀', name: '先看看', desc: '随便了解一下',
+    bg: 'linear-gradient(145deg, #0EA5E9 0%, #38BDF8 100%)',
+    reply: '先看看，完全没问题。\n\n没有压力，我们就聊聊你的情况，你随时决定下一步。'
+  }
+];
+
+const REASONS = [
+  { id: 'weight',  icon: '⚖️', main: '体重或体型让我不舒服', sub: '想看到身材上的变化',
+    reply: '体型的变化是最直观的目标，也是很多人开始的地方。\n\n好消息是：运动带来的身体变化，往往比你预期的更早发生。' },
+  { id: 'health',  icon: '❤️', main: '感觉身体越来越差', sub: '精力下降，容易疲惫',
+    reply: '身体发出信号，你听到了——这很重要。\n\n从提升精力和体能开始，你会比预期更快感受到不同。' },
+  { id: 'habit',   icon: '🔄', main: '想真正建立运动习惯', sub: '一直没做到，想这次认真',
+    reply: '习惯是所有改变里最有价值的目标。\n\n这次我们在设计上就避开之前让你停下来的原因。' },
+  { id: 'energy',  icon: '⚡', main: '想让整体状态更好', sub: '精力、睡眠、心情全面提升',
+    reply: '状态这个目标我喜欢——它比体重更真实地反映进步。\n\n精力好了，其他改变会自然跟上来。' },
+  { id: 'goal',    icon: '🎯', main: '有一个具体目标', sub: '比赛、婚礼或某个特定事件',
+    reply: '有具体目标的人往往更容易坚持。\n\n告诉我你的目标，我们反推时间线和计划。' }
+];
+
+const PASTS = [
+  { id: 'tried_failed', icon: '🔁', main: '试过，但没坚持下来', sub: '选一下原因' },
+  { id: 'tried_ok',     icon: '📈', main: '有过一些基础', sub: '想重新系统化' },
+  { id: 'first_time',   icon: '🌟', main: '这是真正的第一次', sub: '完全从零开始' }
+];
+
+const OBSTACLES = [
+  { id: 'too_hard',  icon: '😰', main: '计划太难，跟不上',
+    reply: '计划太难——这次我们从你真正能跟上的强度出发。\n\n前两周只有一个目标：让运动变成习惯，而不是挑战。' },
+  { id: 'too_busy',  icon: '⏰', main: '太忙，一乱就停了',
+    reply: '忙是真实的挑战。我们的计划要能在你最忙的时候也能执行——哪怕10分钟，也算完成。' },
+  { id: 'no_result', icon: '📉', main: '看不到效果，失去动力',
+    reply: '看不到效果很让人沮丧。这次我们把进度追踪做得更细，让每一点变化都可见。' },
+  { id: 'dunno',     icon: '🤷', main: '不知道为什么，就停了',
+    reply: '没关系。有时候停下来的原因不重要，重要的是这次我们设计得更容错。' }
+];
+
+const RHYTHMS = [
+  { id: 'regular',   icon: '🏢', main: '朝九晚五，相对规律' },
+  { id: 'overtime',  icon: '💼', main: '经常加班，时间不固定' },
+  { id: 'travel',    icon: '✈️', main: '出差多，生活不固定' },
+  { id: 'flexible',  icon: '🏠', main: '在家或时间较灵活' }
+];
+
+// ═══════════════════════════════════════════
+// NOTES DATA
+// ═══════════════════════════════════════════
+
+const STAGE_NOTES = [
+  {
+    label: '情感切入',
+    cards: [
+      {
+        title: '为什么从"感受"开始',
+        items: [
+          { b: '降低防御心理', t: '用户对填写数据有本能抵触，但愿意分享当下感受。第一个问题设定情感基调，而非收集数据。' },
+          { b: '视觉化情绪选择器', t: '受 Apple Health State of Mind 启发——不同颜色渐变对应不同情绪，选择更直觉，减少阅读负担。' },
+          { b: '没有错误答案', t: '所有选项都会获得接纳性回应，不引发评判感。"迷茫"和"充满期待"同样被肯定。' },
+          { b: '回应因人而异', t: '每种情绪对应不同策略：对"压力很大"承诺不添压，对"下定决心"呼应力量感。' }
+        ],
+        refs: [
+          { label: 'Apple Health', cls: 'ref-apple' },
+          { label: 'Headspace', cls: 'ref-head' }
+        ]
+      }
+    ]
+  },
+  {
+    label: '来这里的原因',
+    cards: [
+      {
+        title: '核心驱动力识别',
+        items: [
+          { b: '5个选项覆盖主要动机', t: '基于用户研究归纳的5类核心驱动力，避免过多选项导致选择困难。' },
+          { b: '副标题降低认知负担', t: '每个选项的副文字补充解释，帮助不确定的用户找到最接近自己的选项。' },
+          { b: '回应建立理解感', t: 'Agent 不只"记录"选择，而是用回应证明自己理解这个目标背后的含义。' }
+        ],
+        refs: [
+          { label: 'Noom 排序策略', cls: 'ref-noom' }
+        ]
+      }
+    ]
+  },
+  {
+    label: '历史与障碍',
+    cards: [
+      {
+        title: '让失败变成信息',
+        items: [
+          { b: '"是什么让你停下来"', t: '不用"你为什么失败"——语言层面消除羞耻感，把障碍变成可设计解决的问题。' },
+          { b: '根据历史分叉流程', t: '有失败史的用户多一步"障碍识别"；有基础的用户跳过，直接进入生活节奏。' },
+          { b: '障碍成为设计输入', t: '"计划太难"→后续计划低于能力强度；"太忙"→计划包含10分钟应急版本。' }
+        ],
+        refs: [
+          { label: 'Noom 历史问题', cls: 'ref-noom' }
+        ]
+      }
+    ]
+  },
+  {
+    label: '了解生活节奏',
+    cards: [
+      {
+        title: '问节奏，不问频次',
+        items: [
+          { b: '生活节奏而非时间量', t: '不问"每周几次"（用户会高估自己），而问"生活节奏"——让 Agent 推算合理频率。' },
+          { b: '4选1降低决策疲劳', t: '这个阶段用户已答了多轮问题，选项数刻意精简为4个。' }
+        ],
+        refs: [
+          { label: 'Whoop 基准期', cls: 'ref-apple' }
+        ]
+      }
+    ]
+  },
+  {
+    label: '启动宣言',
+    cards: [
+      {
+        title: '首次价值时刻设计',
+        items: [
+          { b: '汇总是故事，不是表格', t: 'Agent 用第二人称叙述对用户的理解，每句话都引用了用户说过的具体内容。' },
+          { b: '视觉化方案卡', t: '让用户感受到"我的计划已经存在了"，而非仍然停留在"要开始"的悬空感。' },
+          { b: '第一个行动要小、要今天', t: '"今晚10分钟"而非"明天开始训练"。小的第一步确保成功体验，且有仪式感。' },
+          { b: '设置提醒是第一个约定', t: '提醒设置不是通知配置，而是与 Agent 的第一个约定——建立下次互动的期待。' }
+        ],
+        refs: [
+          { label: 'Headspace', cls: 'ref-head' },
+          { label: 'Future', cls: 'ref-future' }
+        ]
+      }
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+
+let sel = {};
+let currentNoteStage = 0;
+
+const STAGES = [
+  { title: '情感切入',       sub: '了解你此刻的状态' },
+  { title: '来这里的原因',   sub: '找到你的核心驱动力' },
+  { title: '了解你的历史',   sub: '避开之前停下来的原因' },
+  { title: '了解你的生活',   sub: '设计真正能坚持的方案' },
+  { title: '你的启动宣言',   sub: '个性化方案已准备好' }
+];
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+
+const $  = id => document.getElementById(id);
+const $m = () => $('messages');
+const $i = () => $('interaction');
+
+function scrollBottom() {
+  const m = $m();
+  setTimeout(() => m.scrollTop = m.scrollHeight, 60);
+}
+
+function setHeader(idx) {
+  const s = STAGES[idx];
+  $('stageTitle').textContent = s.title;
+  $('stageSub').textContent   = s.sub;
+  const dots = $('progressSteps').querySelectorAll('.progress-dot');
+  dots.forEach((d, i) => {
+    d.className = 'progress-dot' + (i < idx ? ' done' : i === idx ? ' active' : '');
+  });
+  $('progressText').textContent = `${idx + 1} / 5`;
+}
+
+// Returns a Promise that resolves after typing → message appears
+function agentSay(text, typingMs = 1100) {
+  return new Promise(resolve => {
+    const tWrap = document.createElement('div');
+    tWrap.className = 'typing-wrap';
+    tWrap.innerHTML = `
+      <div class="avatar">🤖</div>
+      <div class="typing-bubble"><i></i><i></i><i></i></div>`;
+    $m().appendChild(tWrap);
+    scrollBottom();
+
+    setTimeout(() => {
+      tWrap.remove();
+      const el = document.createElement('div');
+      el.className = 'msg agent';
+      el.innerHTML = `
+        <div class="avatar">🤖</div>
+        <div class="bubble">${text.replace(/\n/g, '<br>')}</div>`;
+      $m().appendChild(el);
+      scrollBottom();
+      resolve();
+    }, typingMs);
+  });
+}
+
+function userSay(text) {
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.innerHTML = `<div class="bubble">${text}</div>`;
+  $m().appendChild(el);
+  scrollBottom();
+}
+
+function clearInteraction() { $i().innerHTML = ''; }
+
+function wrapInner(el) {
+  const div = document.createElement('div');
+  div.className = 'interaction-inner';
+  div.appendChild(el);
+  $i().appendChild(div);
+}
+
+// ═══════════════════════════════════════════
+// NOTES PANEL
+// ═══════════════════════════════════════════
+
+function buildPills() {
+  const wrap = $('stagePills');
+  wrap.innerHTML = '';
+  STAGE_NOTES.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (i === currentNoteStage ? ' active' : '');
+    btn.textContent = s.label;
+    btn.onclick = () => showNotes(i);
+    wrap.appendChild(btn);
+  });
+}
+
+function showNotes(idx) {
+  currentNoteStage = idx;
+  buildPills();
+  const data = STAGE_NOTES[idx];
+  const wrap = $('notesContent');
+  wrap.innerHTML = '';
+  data.cards.forEach(card => {
+    const el = document.createElement('div');
+    el.className = 'note-card';
+    const refsHtml = (card.refs || []).map(r =>
+      `<span class="ref-tag ${r.cls}">${r.label}</span>`).join('');
+    el.innerHTML = `
+      <div class="note-card-title">${card.title}</div>
+      ${card.items.map(it => `
+        <div class="note-item">
+          <b>${it.b}</b>${it.t}
+        </div>`).join('')}
+      ${refsHtml ? `<div style="margin-top:8px">${refsHtml}</div>` : ''}
+    `;
+    wrap.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════
+// STAGE RENDERERS
+// ═══════════════════════════════════════════
+
+function startStage0() {
+  setHeader(0);
+  showNotes(0);
+
+  agentSay('你好！很高兴你在这里。😊')
+    .then(() => agentSay('在开始之前，我想先了解一下你——不是填表格，只想知道你现在感觉怎么样？', 900))
+    .then(() => renderMoodGrid());
+}
+
+function renderMoodGrid() {
+  clearInteraction();
+  const inner = document.createElement('div');
+  inner.className = 'mood-grid';
+
+  MOODS.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'mood-card';
+    card.style.background = m.bg;
+    card.innerHTML = `
+      <span class="mood-emoji">${m.emoji}</span>
+      <span class="mood-name">${m.name}</span>
+      <span class="mood-desc">${m.desc}</span>`;
+    card.onclick = () => onMoodSelect(m);
+    inner.appendChild(card);
+  });
+
+  wrapInner(inner);
+}
+
+function onMoodSelect(mood) {
+  sel.mood = mood;
+  // Dim others, highlight selected
+  document.querySelectorAll('.mood-card').forEach(c => {
+    c.onclick = null;
+    c.classList.add(c.querySelector('.mood-name').textContent === mood.name ? 'selected' : 'dimmed');
+  });
+  userSay(`${mood.emoji} ${mood.name}`);
+
+  setTimeout(() => {
+    clearInteraction();
+    setHeader(1);
+    showNotes(1);
+    agentSay(mood.reply, 1000)
+      .then(() => agentSay('你今天来这里，最直接的原因是什么？', 700))
+      .then(() => renderReasonList());
+  }, 300);
+}
+
+function renderReasonList() {
+  clearInteraction();
+  const inner = document.createElement('div');
+  inner.className = 'option-list';
+  REASONS.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `
+      <span class="opt-icon">${r.icon}</span>
+      <div class="opt-text">
+        <div class="opt-main">${r.main}</div>
+        <div class="opt-sub">${r.sub}</div>
+      </div>`;
+    btn.onclick = () => onReasonSelect(r);
+    inner.appendChild(btn);
+  });
+  wrapInner(inner);
+}
+
+function onReasonSelect(reason) {
+  sel.reason = reason;
+  document.querySelectorAll('.opt-btn').forEach(b => {
+    b.onclick = null;
+    const isMe = b.querySelector('.opt-main').textContent === reason.main;
+    b.classList.add(isMe ? 'selected' : 'dimmed');
+  });
+  userSay(`${reason.icon} ${reason.main}`);
+
+  setTimeout(() => {
+    clearInteraction();
+    setHeader(2);
+    showNotes(2);
+    agentSay(reason.reply, 1000)
+      .then(() => agentSay('你以前认真尝试过健身或健康管理吗？', 700))
+      .then(() => renderPastList());
+  }, 300);
+}
+
+function renderPastList() {
+  clearInteraction();
+  const inner = document.createElement('div');
+  inner.className = 'option-list';
+  PASTS.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `
+      <span class="opt-icon">${p.icon}</span>
+      <div class="opt-text">
+        <div class="opt-main">${p.main}</div>
+        <div class="opt-sub">${p.sub}</div>
+      </div>`;
+    btn.onclick = () => onPastSelect(p);
+    inner.appendChild(btn);
+  });
+  wrapInner(inner);
+}
+
+function onPastSelect(past) {
+  sel.past = past;
+  document.querySelectorAll('.opt-btn').forEach(b => {
+    b.onclick = null;
+    const isMe = b.querySelector('.opt-main').textContent === past.main;
+    b.classList.add(isMe ? 'selected' : 'dimmed');
+  });
+  userSay(`${past.icon} ${past.main}`);
+
+  setTimeout(() => {
+    clearInteraction();
+    if (past.id === 'tried_failed') {
+      agentSay('能说说是什么让你停下来的吗？', 900)
+        .then(() => renderObstacleList());
+    } else {
+      const txt = past.id === 'tried_ok'
+        ? '有基础的人进步会更快。\n\n这次我们把计划做得更系统一些。'
+        : '从零开始，反而没有旧习惯的包袱。\n\n我们一起打好基础。';
+      agentSay(txt, 1000)
+        .then(() => goToRhythm());
+    }
+  }, 300);
+}
+
+function renderObstacleList() {
+  const inner = document.createElement('div');
+  inner.className = 'option-list';
+  OBSTACLES.forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `
+      <span class="opt-icon">${o.icon}</span>
+      <div class="opt-text"><div class="opt-main">${o.main}</div></div>`;
+    btn.onclick = () => onObstacleSelect(o);
+    inner.appendChild(btn);
+  });
+  wrapInner(inner);
+}
+
+function onObstacleSelect(obs) {
+  sel.obstacle = obs;
+  document.querySelectorAll('.opt-btn').forEach(b => {
+    b.onclick = null;
+    const isMe = b.querySelector('.opt-main').textContent === obs.main;
+    b.classList.add(isMe ? 'selected' : 'dimmed');
+  });
+  userSay(`${obs.icon} ${obs.main}`);
+
+  setTimeout(() => {
+    clearInteraction();
+    agentSay(obs.reply, 1000)
+      .then(() => goToRhythm());
+  }, 300);
+}
+
+function goToRhythm() {
+  setHeader(3);
+  showNotes(3);
+  agentSay('你的生活节奏大概是怎样的？', 700)
+    .then(() => renderRhythmList());
+}
+
+function renderRhythmList() {
+  clearInteraction();
+  const inner = document.createElement('div');
+  inner.className = 'option-list';
+  RHYTHMS.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `
+      <span class="opt-icon">${r.icon}</span>
+      <div class="opt-text"><div class="opt-main">${r.main}</div></div>`;
+    btn.onclick = () => onRhythmSelect(r);
+    inner.appendChild(btn);
+  });
+  wrapInner(inner);
+}
+
+function onRhythmSelect(rhythm) {
+  sel.rhythm = rhythm;
+  document.querySelectorAll('.opt-btn').forEach(b => {
+    b.onclick = null;
+    const isMe = b.querySelector('.opt-main').textContent === rhythm.main;
+    b.classList.add(isMe ? 'selected' : 'dimmed');
+  });
+  userSay(`${rhythm.icon} ${rhythm.main}`);
+
+  setTimeout(() => {
+    clearInteraction();
+    setHeader(4);
+    showNotes(4);
+    agentSay('好，我对你了解得差不多了。\n\n让我生成你的专属启动方案……', 1000)
+      .then(() => renderSummary());
+  }, 300);
+}
+
+function renderSummary() {
+  const m = sel.mood    || MOODS[0];
+  const r = sel.reason  || REASONS[0];
+  const obs = sel.obstacle;
+  const rh = sel.rhythm || RHYTHMS[0];
+
+  let summaryText = `你是一个感到<strong>${m.name}</strong>的人，最想解决的是「${r.main}」。`;
+  if (obs) summaryText += `<br><br>上次停下来是因为「${obs.main}」——这次我们在设计上就绕开这里。`;
+  summaryText += `<br><br>基于你「${rh.main}」的生活节奏，我会给你一个能真正融入生活的方案。`;
+
+  agentSay(summaryText, 1100)
+    .then(() => {
+      clearInteraction();
+      const inner = document.createElement('div');
+
+      // Summary card
+      const card = document.createElement('div');
+      card.className = 'summary-card';
+      const rows = [
+        { i: '🎯', t: r.main },
+        { i: '📅', t: '每周 3 次，每次 30 分钟起' },
+        { i: '🛡️', t: obs ? `避开「${obs.main}」` : '渐进式计划，容错设计' },
+        { i: '✨', t: '今天完成第一个小行动' }
+      ];
+      card.innerHTML = `
+        <h4>你的启动方案</h4>
+        ${rows.map(row => `
+          <div class="summary-row">
+            <span class="si">${row.i}</span>
+            <span>${row.t}</span>
+          </div>`).join('')}`;
+      inner.appendChild(card);
+
+      // CTA
+      const btn = document.createElement('button');
+      btn.className = 'action-btn';
+      btn.textContent = '我准备好了，开始吧 →';
+      btn.onclick = () => onStartClick(btn);
+      inner.appendChild(btn);
+
+      $i().appendChild(inner);
+    });
+}
+
+function onStartClick(btn) {
+  btn.onclick = null;
+  btn.style.opacity = '0.5';
+  clearInteraction();
+
+  agentSay('太好了！🎉\n\n今天不给你一个"计划"——我给你一个行动：\n\n🎯 今晚，在睡前1小时，做10分钟拉伸。\n\n就这一件事。完成后来告诉我感觉怎么样。', 1100)
+    .then(() => {
+      const inner = document.createElement('div');
+      const reminderBtn = document.createElement('button');
+      reminderBtn.className = 'action-btn';
+      reminderBtn.textContent = '⏰ 设置今晚 9:00 提醒';
+      reminderBtn.onclick = () => {
+        reminderBtn.textContent = '✅ 提醒已设置！今晚 9:00 见';
+        reminderBtn.classList.add('success');
+        reminderBtn.onclick = null;
+        agentSay('好！今晚9点我来找你。\n\n欢迎来到这里——我们已经开始了。😊', 700);
+      };
+      inner.appendChild(reminderBtn);
+      $i().innerHTML = '';
+      $i().appendChild(inner);
+    });
+}
+
+// ═══════════════════════════════════════════
+// RESTART
+// ═══════════════════════════════════════════
+
+function restart() {
+  sel = {};
+  $m().innerHTML = '';
+  $i().innerHTML = '';
+  currentNoteStage = 0;
+  startStage0();
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+
+buildPills();
+startStage0();
+</script>
+</body>
+</html>
