@@ -60,6 +60,18 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "研究参考",
+        "groups": [
+          {
+            "group": "竞品与设计参考",
+            "pages": [
+              "research/competitive-analysis",
+              "research/onboarding-reference"
+            ]
+          }
+        ]
       }
     ],
     "global": {
