@@ -1,68 +1,62 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "运动健康 Agent UX 知识库",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#0EA5E9",
+    "light": "#38BDF8",
+    "dark": "#0284C7"
   },
   "favicon": "/favicon.svg",
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "概览",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "项目介绍",
             "pages": [
               "index",
-              "quickstart",
-              "development"
-            ]
-          },
-          {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "overview/vision",
+              "overview/architecture"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Skill 体系",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Skill 设计框架",
             "pages": [
-              "api-reference/introduction"
+              "skills/overview"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "四大核心 Skill",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "skills/training-plan",
+              "skills/nutrition",
+              "skills/health-data",
+              "skills/goal-tracking"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "UX 体验范式",
+        "groups": [
+          {
+            "group": "设计原则",
+            "pages": [
+              "ux-patterns/conversation-design",
+              "ux-patterns/interaction-paradigms"
+            ]
+          },
+          {
+            "group": "用户旅程",
+            "pages": [
+              "ux-patterns/user-journey"
             ]
           }
         ]
@@ -71,14 +65,9 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "GitHub",
+          "href": "https://github.com/zldesigner/docs",
+          "icon": "github"
         }
       ]
     }
@@ -90,33 +79,14 @@
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "反馈",
+        "href": "https://github.com/zldesigner/docs/issues"
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+    ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/zldesigner/docs"
     }
   }
 }

@@ -1,0 +1,157 @@
+---
+title: Skill 体系概览
+description: 运动健康 Agent 的 Skill 设计框架、设计原则与 Skill 间协作机制
+---
+
+# Skill 体系概览
+
+## 什么是 Skill
+
+在运动健康 Agent 中，**Skill 是 Agent 能力的基本封装单元**。每个 Skill 代表一类独立的专业能力，具备清晰的能力边界、标准化的接口，以及独立的上下文感知能力。
+
+Skill 不是功能菜单，而是**能力模块**——它们可以被 Agent 动态组合调用，也可以独立运行，用户无需知道背后调用了哪些 Skill，只需感受到 Agent 的智能和帮助。
+
+## 四大核心 Skill
+
+<Columns cols={2}>
+  <Card title="🏋️ 训练计划 Skill" href="/skills/training-plan">
+    **核心能力：** 个性化训练方案的生成、调整与执行追踪
+
+    基于用户目标、体能水平、可用时间和偏好，生成科学的训练计划，并根据实际执行情况动态优化。
+  </Card>
+  <Card title="🥗 饮食营养 Skill" href="/skills/nutrition">
+    **核心能力：** 膳食记录分析、营养摄入管理与食谱推荐
+
+    帮助用户理解自己的饮食结构，提供符合健康目标的饮食建议，并支持灵活的饮食记录方式。
+  </Card>
+  <Card title="📊 健康数据 Skill" href="/skills/health-data">
+    **核心能力：** 多源健康数据整合、趋势分析与异常预警
+
+    整合穿戴设备、手动记录等多种数据来源，将碎片化的健康数据转化为有价值的洞察。
+  </Card>
+  <Card title="🎯 目标追踪 Skill" href="/skills/goal-tracking">
+    **核心能力：** 健康目标管理、进度追踪与持续激励
+
+    贯穿用户整个健康旅程，管理目标的设定、拆解、追踪和调整，并在关键时刻提供情感支持。
+  </Card>
+</Columns>
+
+## Skill 设计原则
+
+### 原则一：能力聚焦
+
+每个 Skill 只做一件事，并把它做到极致。训练计划 Skill 不做营养建议，目标追踪 Skill 不分析心率数据。清晰的边界让每个 Skill 更易于设计、测试和迭代。
+
+### 原则二：上下文感知
+
+Skill 不是无状态的函数调用。每个 Skill 都能感知：
+- **用户画像**：基础健康信息、偏好设置
+- **历史状态**：过去的对话、执行记录
+- **当前语境**：对话上下文、触发原因
+- **关联数据**：其他 Skill 产生的相关数据
+
+### 原则三：渐进式交互
+
+Skill 的输出应该根据用户的参与深度分层呈现：
+
+```
+第一层（默认）：核心结论 + 行动指引
+    ↓ 用户想了解更多
+第二层（展开）：数据支撑 + 背景解读
+    ↓ 用户深度探索
+第三层（详情）：完整分析 + 专业解释
+```
+
+### 原则四：可信可控
+
+用户始终掌握主动权：
+- Skill 的建议是**参考**，不是指令
+- 用户可以随时修改、拒绝或忽略 Skill 的输出
+- Skill 会解释"为什么"，而不只是"是什么"
+
+### 原则五：优雅降级
+
+当数据不足或场景不确定时，Skill 应该：
+1. 明确告知当前建议的局限性
+2. 给出基于最佳假设的建议（并说明假设）
+3. 引导用户补充必要信息
+
+## Skill 间协作
+
+### 协作模式
+
+<Tabs>
+  <Tab title="串行协作">
+    一个 Skill 的输出作为另一个 Skill 的输入。
+
+    **示例：** 健康数据 Skill 发现用户睡眠不足 → 训练计划 Skill 自动降低今日训练强度
+
+    ```
+    健康数据 Skill → 检测睡眠质量
+          ↓ 睡眠评分 < 阈值
+    训练计划 Skill → 调整当日计划强度
+    ```
+  </Tab>
+  <Tab title="并行协作">
+    多个 Skill 同时运行，结果合并输出。
+
+    **示例：** 用户询问减脂进展 → 目标追踪、健康数据、饮食营养三个 Skill 并行分析
+
+    ```
+    目标追踪 Skill ──┐
+    健康数据 Skill ──┼──▶ 综合输出
+    饮食营养 Skill ──┘
+    ```
+  </Tab>
+  <Tab title="事件驱动">
+    一个 Skill 触发事件，另一个 Skill 响应事件。
+
+    **示例：** 目标追踪 Skill 检测到里程碑完成 → 训练计划 Skill 自动升级训练难度
+
+    ```
+    目标追踪 Skill → emit(MILESTONE_REACHED)
+                          ↓
+    训练计划 Skill → 接收事件 → 调整计划难度
+    饮食营养 Skill → 接收事件 → 放宽本周饮食建议（奖励机制）
+    ```
+  </Tab>
+</Tabs>
+
+### 数据共享规范
+
+Skill 之间通过标准化的数据契约共享信息：
+
+```typescript
+// Skill 可读取的共享数据
+interface SharedHealthContext {
+  // 来自健康数据 Skill
+  recentSleepScore: number;
+  weeklyActivityLevel: ActivityLevel;
+  heartRateVariability: number;
+
+  // 来自训练计划 Skill
+  currentPlan: TrainingPlan;
+  lastWorkoutDate: Date;
+  weeklyCompletionRate: number;
+
+  // 来自饮食营养 Skill
+  dailyCalorieBalance: number;
+  proteinIntake: number;
+  hydrationLevel: HydrationLevel;
+
+  // 来自目标追踪 Skill
+  activeGoals: Goal[];
+  nearestMilestone: Milestone;
+  motivationScore: number;
+}
+```
+
+## Skill 生命周期
+
+```
+注册 → 待激活 → 运行中 → 等待输入 → 完成 → 归档
+ │                  │          │
+ └── 配置权限       └── 调用子Skill  └── 等待用户响应
+```
+
+每次 Skill 执行完成后，其结果都会被持久化到用户的健康档案中，供未来的 Skill 调用参考。
