@@ -122,6 +122,11 @@ input[type=range]::-moz-range-thumb {
     <label>速度</label>
     <input type="range" id="sSpeed" min="0.05" max="3.0" step="0.05" value="0.7">
   </div>
+  <div class="divider"></div>
+  <div class="knob">
+    <label>模糊</label>
+    <input type="range" id="sBlur" min="0.2" max="4.0" step="0.05" value="1.0">
+  </div>
 </div>
 <script>
 // ── Colour presets ──
@@ -137,6 +142,7 @@ const PRESETS = [
 let glowColor = [...PRESETS[0].rgb];
 let intensity  = 1.0;
 let speed      = 0.7;
+let blur       = 1.0;
 let accumTime  = 0.0;
 let lastTs     = null;
 
@@ -165,6 +171,7 @@ document.getElementById('colorPick').oninput = e => {
 };
 document.getElementById('sIntensity').oninput = e => intensity = +e.target.value;
 document.getElementById('sSpeed').oninput     = e => speed     = +e.target.value;
+document.getElementById('sBlur').oninput      = e => blur      = +e.target.value;
 
 // ── WebGL setup ──
 const canvas = document.getElementById('glc');
@@ -187,6 +194,7 @@ precision highp float;
 uniform float uTime;
 uniform vec3  uColor;
 uniform float uIntensity;
+uniform float uBlur;       /* softness: >1 = softer/wider, <1 = tighter */
 uniform vec2  uResolution;
 
 /* Rounded-rectangle signed distance function.
@@ -234,16 +242,20 @@ void main() {
 
   float dist = sdRoundBox(uv - center, vec2(w, h), r);
 
-  /* ── Glow: exponential falloff layers outside the shape ── */
-  float d = max(dist, 0.0);
-  float gTight = exp(-d * 32.0);           /* tight bright halo    */
-  float gMid   = exp(-d * 11.0) * 0.50;   /* mid-range diffuse    */
-  float gBroad = exp(-d *  3.8) * 0.25;   /* wide ambient bloom   */
+  /* ── Glow: exponential falloff layers outside the shape ──
+     Dividing the decay rate by uBlur makes the falloff wider (softer)
+     when uBlur > 1 and narrower (sharper) when uBlur < 1.              */
+  float d      = max(dist, 0.0);
+  float inv    = 1.0 / max(uBlur, 0.05);
+  float gTight = exp(-d * 32.0 * inv);           /* tight bright halo  */
+  float gMid   = exp(-d * 11.0 * inv) * 0.50;   /* mid-range diffuse  */
+  float gBroad = exp(-d *  3.8 * inv) * 0.25;   /* wide ambient bloom */
   float gTotal  = (gTight + gMid + gBroad) * uIntensity;
 
-  /* ── Rim: thin luminous ring straddling the boundary ── */
-  float rimOut  = smoothstep( 0.010,  0.000, dist);
-  float rimIn   = smoothstep(-0.014, -0.002, dist);
+  /* ── Rim: stays mostly sharp; blur widens it gently ── */
+  float rimW   = 0.010 * clamp(uBlur, 0.4, 2.0);
+  float rimOut  = smoothstep( rimW,    0.000, dist);
+  float rimIn   = smoothstep(-rimW * 1.4, -0.002, dist);
   float rim     = rimOut * rimIn * uIntensity * 0.60;
 
   /* ── Colour composition ── */
@@ -291,6 +303,7 @@ gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0);
 const uTimeLoc  = gl.getUniformLocation(prog, 'uTime');
 const uColorLoc = gl.getUniformLocation(prog, 'uColor');
 const uIntenLoc = gl.getUniformLocation(prog, 'uIntensity');
+const uBlurLoc  = gl.getUniformLocation(prog, 'uBlur');
 const uResLoc   = gl.getUniformLocation(prog, 'uResolution');
 
 function resize() {
@@ -310,6 +323,7 @@ function frame(ts) {
   gl.uniform1f(uTimeLoc,   accumTime);
   gl.uniform3fv(uColorLoc, glowColor);
   gl.uniform1f(uIntenLoc,  intensity);
+  gl.uniform1f(uBlurLoc,   blur);
   gl.uniform2f(uResLoc,    canvas.width, canvas.height);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
