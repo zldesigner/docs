@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>动态光晕效果</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+canvas {
+  position: fixed;
+  filter: blur(28px);
+}
+
+/* ── COLOR PICKER UI ── */
+.ui {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(12, 12, 12, 0.75);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 10px 18px;
+  border-radius: 50px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 100;
+}
+
+.ui-label {
+  font-family: -apple-system, 'PingFang SC', sans-serif;
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.06em;
+  user-select: none;
+  margin-right: 2px;
+}
+
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2.5px solid transparent;
+  transition: transform 0.2s, border-color 0.25s;
+  flex-shrink: 0;
+}
+.swatch:hover { transform: scale(1.18); }
+.swatch.active {
+  border-color: rgba(255,255,255,0.85);
+  transform: scale(1.12);
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.1);
+  margin: 0 2px;
+}
+
+.custom-wrap {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255,255,255,0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, transform 0.2s;
+  overflow: hidden;
+}
+.custom-wrap:hover {
+  border-color: rgba(255,255,255,0.6);
+  transform: scale(1.12);
+}
+.custom-wrap .plus {
+  color: rgba(255,255,255,0.5);
+  font-size: 15px;
+  line-height: 1;
+  pointer-events: none;
+}
+.custom-wrap input[type=color] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Speed control */
+.speed-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 2px;
+}
+.speed-label {
+  font-family: -apple-system, 'PingFang SC', sans-serif;
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.06em;
+  user-select: none;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 64px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.15);
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.75);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+  background: #fff;
+}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="ui" id="ui">
+  <span class="ui-label">颜色</span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// PALETTE DEFINITIONS
+// ═══════════════════════════════════════════════
+
+const PALETTES = [
+  {
+    id: 'lime', label: '柠黄',
+    dark:  [10, 10,  0],
+    main:  [230, 255, 0],
+    hi:    [80, 255, 50],
+    white: [240, 255, 200],
+    swatch: '#E6FF00'
+  },
+  {
+    id: 'aurora', label: '极光',
+    dark:  [0,  10, 18],
+    main:  [0, 220, 255],
+    hi:    [0, 255, 160],
+    white: [180, 255, 255],
+    swatch: '#00DCFF'
+  },
+  {
+    id: 'ember', label: '熔岩',
+    dark:  [14,  3,  0],
+    main:  [255, 110, 0],
+    hi:    [255,  40, 0],
+    white: [255, 220, 180],
+    swatch: '#FF6E00'
+  },
+  {
+    id: 'nebula', label: '星云',
+    dark:  [8, 0, 16],
+    main:  [230, 50, 255],
+    hi:    [120, 0, 255],
+    white: [240, 200, 255],
+    swatch: '#E632FF'
+  },
+  {
+    id: 'arctic', label: '冰蓝',
+    dark:  [0,  8, 20],
+    main:  [100, 200, 255],
+    hi:    [200, 240, 255],
+    white: [255, 255, 255],
+    swatch: '#64C8FF'
+  },
+  {
+    id: 'toxic', label: '毒液',
+    dark:  [0, 12,  4],
+    main:  [110, 255, 0],
+    hi:    [0, 255, 180],
+    white: [220, 255, 220],
+    swatch: '#6EFF00'
+  },
+];
+
+let pal = PALETTES[0];
+
+// ═══════════════════════════════════════════════
+// CANVAS SETUP
+// ═══════════════════════════════════════════════
+
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const PAD    = 80; // Extra pixels to hide blur edge artifacts
+
+let W = 0, H = 0;
+
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width  = W + PAD * 2;
+  canvas.height = H + PAD * 2;
+  canvas.style.left   = -PAD + 'px';
+  canvas.style.top    = -PAD + 'px';
+  canvas.style.width  = (W + PAD * 2) + 'px';
+  canvas.style.height = (H + PAD * 2) + 'px';
+  rebuildRays();
+}
+
+window.addEventListener('resize', resize);
+
+// ═══════════════════════════════════════════════
+// WAVE DEFINITION — layered sines
+// ═══════════════════════════════════════════════
+
+const WAVE_LAYERS = [
+  { f: 0.65, a: 0.075, s: 0.35, p: 0.00 },
+  { f: 1.85, a: 0.040, s: 0.62, p: 1.57 },
+  { f: 3.30, a: 0.024, s: 1.05, p: 2.80 },
+  { f: 5.90, a: 0.015, s: 0.52, p: 0.85 },
+  { f: 10.4, a: 0.008, s: 1.70, p: 1.90 },
+  { f: 18.7, a: 0.004, s: 0.88, p: 3.30 },
+];
+
+let speedMult = 1.0;
+
+function waveY(normX, t) {
+  let y = 0.44; // base: 44% from top
+  for (const w of WAVE_LAYERS) {
+    y += Math.sin(normX * w.f * Math.PI * 2 + t * w.s * speedMult + w.p) * w.a;
+  }
+  return y * (H + PAD * 2);
+}
+
+// ═══════════════════════════════════════════════
+// RAYS — soft vertical light columns
+// ═══════════════════════════════════════════════
+
+let rays = [];
+
+function rebuildRays() {
+  rays = Array.from({ length: 14 }, () => ({
+    x:     Math.random(),                         // 0–1 normalized
+    w:     0.035 + Math.random() * 0.07,          // width 0–1
+    sp:    (Math.random() - 0.5) * 0.006,         // drift speed
+    alpha: 0.06 + Math.random() * 0.14,           // opacity
+    phase: Math.random() * Math.PI * 2,           // brightness pulse phase
+  }));
+}
+
+// ═══════════════════════════════════════════════
+// COLOR HELPERS
+// ═══════════════════════════════════════════════
+
+function rgb(r, g, b, a = 1) {
+  return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`;
+}
+
+function lerpRgb(a, b, t) {
+  return [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+    a[2] + (b[2] - a[2]) * t,
+  ];
+}
+
+function hexToRgb(hex) {
+  hex = hex.replace('#', '');
+  return [
+    parseInt(hex.slice(0, 2), 16),
+    parseInt(hex.slice(2, 4), 16),
+    parseInt(hex.slice(4, 6), 16),
+  ];
+}
+
+function rgbToHex([r, g, b]) {
+  return '#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+}
+
+// HSL-based accent derivation for custom colors
+function hexToHsl(hex) {
+  let [r, g, b] = hexToRgb(hex).map(v => v / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return [h * 360, s * 100, l * 100];
+}
+
+function hslToHex(h, s, l) {
+  h /= 360; s /= 100; l /= 100;
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1; if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q-p)*6*t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q-p)*(2/3-t)*6;
+      return p;
+    };
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  return rgbToHex([r*255, g*255, b*255]);
+}
+
+function buildCustomPalette(hex) {
+  const [h, s, l] = hexToHsl(hex);
+  const mainHex = hex;
+  const hiHex   = hslToHex((h - 25 + 360) % 360, Math.min(100, s + 10), Math.min(90, l + 15));
+  const darkHex = hslToHex(h, s * 0.5, 4);
+  const wHex    = hslToHex(h, s * 0.3, 88);
+  return {
+    id: 'custom',
+    dark:  hexToRgb(darkHex),
+    main:  hexToRgb(mainHex),
+    hi:    hexToRgb(hiHex),
+    white: hexToRgb(wHex),
+    swatch: hex,
+  };
+}
+
+// ═══════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════
+
+let t = 0;
+let lastTime = 0;
+
+function render(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.05); // cap at 50ms
+  lastTime = now;
+  t += dt;
+
+  const cw = canvas.width;
+  const ch = canvas.height;
+
+  // ── 1. Dark background ──────────────────────
+  ctx.fillStyle = rgb(...pal.dark);
+  ctx.fillRect(0, 0, cw, ch);
+
+  // ── 2. Build wave polyline ──────────────────
+  const STEP = 3;
+  const pts  = [];
+  for (let x = 0; x <= cw; x += STEP) {
+    pts.push([x, waveY(x / cw, t)]);
+  }
+
+  // ── 3. Bright zone fill ─────────────────────
+  ctx.save();
+
+  // Clip to below-wave region
+  ctx.beginPath();
+  ctx.moveTo(0, ch);
+  for (const [x, y] of pts) ctx.lineTo(x, y);
+  ctx.lineTo(cw, ch);
+  ctx.closePath();
+  ctx.clip();
+
+  // Gradient: hi at top of zone → main → slightly brighter at bottom
+  const minWaveY = Math.min(...pts.map(p => p[1]));
+  const grad = ctx.createLinearGradient(0, minWaveY, 0, ch);
+  grad.addColorStop(0.00, rgb(...pal.hi,    0.90));
+  grad.addColorStop(0.10, rgb(...pal.main,  1.00));
+  grad.addColorStop(0.55, rgb(...pal.main,  1.00));
+  grad.addColorStop(0.85, rgb(...lerpRgb(pal.main, pal.white, 0.18), 1.00));
+  grad.addColorStop(1.00, rgb(...lerpRgb(pal.main, pal.white, 0.30), 0.95));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, cw, ch);
+
+  // ── 4. Vertical ray columns ─────────────────
+  for (const ray of rays) {
+    // drift
+    ray.x = ((ray.x + ray.sp * dt + 1) % 1);
+
+    // pulsing alpha
+    const pulse = ray.alpha * (0.7 + 0.3 * Math.sin(t * 1.8 + ray.phase));
+    const rx = ray.x * cw;
+    const rw = ray.w * cw;
+
+    const rg = ctx.createLinearGradient(rx - rw * 0.5, 0, rx + rw * 0.5, 0);
+    rg.addColorStop(0,   'transparent');
+    rg.addColorStop(0.5, rgb(...pal.white, pulse));
+    rg.addColorStop(1,   'transparent');
+    ctx.fillStyle = rg;
+    ctx.fillRect(rx - rw * 0.5, 0, rw, ch);
+  }
+
+  ctx.restore();
+
+  // ── 5. Wave edge glow line ──────────────────
+  // Thick bright line → becomes glowing ridge after CSS blur
+  ctx.beginPath();
+  for (let i = 0; i < pts.length; i++) {
+    const [x, y] = pts[i];
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = rgb(...pal.hi, 0.88);
+  ctx.lineWidth   = 5;
+  ctx.lineJoin    = 'round';
+  ctx.stroke();
+
+  // Thin bright-white core on the edge (creates a crisp hot glow)
+  ctx.beginPath();
+  for (let i = 0; i < pts.length; i++) {
+    const [x, y] = pts[i];
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = rgb(...pal.white, 0.55);
+  ctx.lineWidth   = 1.5;
+  ctx.stroke();
+
+  // ── 6. Subtle ambient noise above wave ──────
+  // A very faint glow that "bleeds" into the dark zone
+  const bleedGrad = ctx.createLinearGradient(0, minWaveY - 60, 0, minWaveY + 20);
+  bleedGrad.addColorStop(0,   'transparent');
+  bleedGrad.addColorStop(1,   rgb(...pal.hi, 0.15));
+  ctx.fillStyle = bleedGrad;
+  ctx.fillRect(0, minWaveY - 60, cw, 80);
+
+  requestAnimationFrame(render);
+}
+
+// ═══════════════════════════════════════════════
+// UI CONSTRUCTION
+// ═══════════════════════════════════════════════
+
+const ui = document.getElementById('ui');
+let activeSwatchEl = null;
+
+function selectPalette(p, swatchEl) {
+  pal = p;
+  if (activeSwatchEl) activeSwatchEl.classList.remove('active');
+  activeSwatchEl = swatchEl;
+  if (swatchEl) swatchEl.classList.add('active');
+}
+
+// Preset swatches
+PALETTES.forEach((p, i) => {
+  const sw = document.createElement('div');
+  sw.className = 'swatch' + (i === 0 ? ' active' : '');
+  sw.style.background = p.swatch;
+  sw.title = p.label;
+  sw.onclick = () => selectPalette(p, sw);
+  if (i === 0) activeSwatchEl = sw;
+  ui.appendChild(sw);
+});
+
+// Divider
+const div1 = document.createElement('div');
+div1.className = 'divider';
+ui.appendChild(div1);
+
+// Custom color picker
+const customWrap = document.createElement('div');
+customWrap.className = 'custom-wrap';
+customWrap.title = '自定义颜色';
+const plusEl = document.createElement('span');
+plusEl.className = 'plus';
+plusEl.textContent = '+';
+const colorIn = document.createElement('input');
+colorIn.type = 'color';
+colorIn.value = '#ff6600';
+colorIn.oninput = () => {
+  const cp = buildCustomPalette(colorIn.value);
+  customWrap.style.background = colorIn.value;
+  customWrap.style.borderStyle = 'solid';
+  plusEl.style.display = 'none';
+  selectPalette(cp, null);
+  if (activeSwatchEl) activeSwatchEl.classList.remove('active');
+  activeSwatchEl = null;
+};
+customWrap.appendChild(plusEl);
+customWrap.appendChild(colorIn);
+ui.appendChild(customWrap);
+
+// Divider
+const div2 = document.createElement('div');
+div2.className = 'divider';
+ui.appendChild(div2);
+
+// Speed control
+const speedWrap = document.createElement('div');
+speedWrap.className = 'speed-wrap';
+const speedLabel = document.createElement('span');
+speedLabel.className = 'speed-label';
+speedLabel.textContent = '速度';
+const speedIn = document.createElement('input');
+speedIn.type = 'range';
+speedIn.min = '0';
+speedIn.max = '100';
+speedIn.value = '40';
+speedIn.oninput = () => {
+  speedMult = 0.1 + (speedIn.value / 100) * 2.9;
+};
+speedMult = 0.1 + (40 / 100) * 2.9;
+speedWrap.appendChild(speedLabel);
+speedWrap.appendChild(speedIn);
+ui.appendChild(speedWrap);
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+
+resize();
+requestAnimationFrame(ts => { lastTime = ts; render(ts); });
+</script>
+</body>
+</html>
