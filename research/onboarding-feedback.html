@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onboarding 反馈态 · Health Agent</title>
+<style>
+/* ── Reset ── */
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
+  background: #111117;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 20px;
+  gap: 32px;
+}
+
+/* ── Phone ── */
+.phone-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; flex-shrink:0; }
+.phone-label { font-size:10px; color:rgba(255,255,255,0.28); letter-spacing:0.1em; text-transform:uppercase; }
+.phone {
+  width: 375px;
+  height: 812px;
+  border-radius: 50px;
+  box-shadow: 0 0 0 10px #1C1C1C, 0 0 0 11px #333, 0 40px 80px rgba(0,0,0,0.7);
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  background: #0C0D14;
+}
+
+/* ── Gradient Background ── */
+.grad {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(220deg, #0D9EAA 0%, #3B1F9A 42%, #FF6A4B 88%);
+  transition: opacity 0.6s ease;
+}
+/* Dark radial overlay for readability */
+.grad::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 110% 60% at 50% -10%,
+      rgba(5,5,12,0.92) 0%,
+      rgba(5,5,12,0.75) 50%,
+      rgba(5,5,12,0.20) 100%);
+}
+
+/* ── Navigation ── */
+.nav {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  padding: 54px 24px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.nav-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.01em;
+}
+.nav-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-dot {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.22);
+  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.nav-dot.done { width: 6px; background: rgba(255,255,255,0.55); }
+.nav-dot.active { width: 20px; background: white; }
+.nav-dot.pending { width: 6px; }
+
+/* ── Screen Switcher ── */
+.screens {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  width: 200%;
+  transition: transform 0.52s cubic-bezier(0.32, 0, 0.2, 1);
+}
+.screen {
+  width: 375px;
+  height: 812px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── SCREEN 1: Selection ── */
+.s1-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 120px 20px 0;
+  z-index: 2;
+}
+
+/* Card container */
+.question-card {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.11);
+  border-radius: 32px;
+  padding: 24px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Gradient label ✦ */
+.grad-label {
+  font-size: 12px;
+  font-weight: 500;
+  background: linear-gradient(95deg, #00A7A0 0%, #6D51F4 35%, #FF6A4B 65%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.card-question {
+  font-size: 15px;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 20px;
+  font-weight: 400;
+}
+
+/* Option rows */
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.option-row:last-child { margin-bottom: 0; }
+.option-row:active { transform: scale(0.98); }
+.option-row:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.18); }
+
+/* Selected state */
+.option-row.selecting {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.4);
+  transform: scale(1.02);
+}
+.option-row.dimmed {
+  opacity: 0.28;
+  pointer-events: none;
+  transform: scale(0.97);
+}
+.option-row.confirmed {
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.5);
+}
+
+.opt-emoji { font-size: 24px; flex-shrink: 0; }
+.opt-text-wrap { flex: 1; min-width: 0; }
+.opt-main {
+  font-size: 17px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.opt-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 2px;
+}
+
+/* Check mark (appears on selected) */
+.opt-check {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: white;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+.opt-check svg { width: 12px; height: 12px; }
+.option-row.confirmed .opt-check { opacity: 1; transform: scale(1); }
+
+/* ── SCREEN 1 Bottom ── */
+.s1-bottom {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 20px 20px 44px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ── SCREEN 2: Feedback ── */
+.s2-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+
+/* Top: confirmed selection */
+.s2-confirmed {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 100px 28px 0;
+  text-align: center;
+}
+
+.confirmed-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.4s ease 0.1s;
+}
+.confirmed-label span {
+  background: linear-gradient(95deg, #00A7A0 0%, #6D51F4 35%, #FF6A4B 65%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 600;
+}
+
+.confirmed-emoji {
+  font-size: 56px;
+  line-height: 1;
+  margin-bottom: 10px;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.2s;
+  display: block;
+}
+
+.confirmed-name {
+  font-size: 44px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 28px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.3s;
+}
+
+/* Divider */
+.divider {
+  width: 40px;
+  height: 1px;
+  background: rgba(255,255,255,0.2);
+  margin: 0 auto 24px;
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: all 0.35s ease 0.5s;
+}
+
+/* Agent response area */
+.agent-response {
+  text-align: left;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: all 0.45s ease 0.6s;
+}
+
+.agent-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.agent-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00A7A0, #6D51F4);
+  flex-shrink: 0;
+}
+.agent-from {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.agent-text {
+  font-size: 16px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.88);
+  line-height: 1.65;
+}
+.agent-text strong {
+  color: white;
+  font-weight: 700;
+}
+
+/* Next question teaser */
+.next-teaser {
+  margin-top: 28px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 20px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.4s ease 0.85s;
+}
+.teaser-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.teaser-q {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.72);
+}
+
+/* Animate in when active */
+.s2-active .confirmed-label,
+.s2-active .confirmed-emoji,
+.s2-active .confirmed-name,
+.s2-active .divider,
+.s2-active .agent-response,
+.s2-active .next-teaser {
+  opacity: 1;
+  transform: none;
+}
+.s2-active .confirmed-emoji { transform: scale(1); }
+
+/* ── Shared Bottom CTA ── */
+.bottom-cta {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 16px 20px 44px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.btn-next {
+  width: 100%;
+  height: 60px;
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 32px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: inherit;
+  transition: opacity 0.2s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-next:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.btn-next:not(:disabled):active { transform: scale(0.97); }
+.btn-next .arrow {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.btn-skip {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-skip:hover { color: rgba(255,255,255,0.6); }
+
+/* ── Notes Panel ── */
+.notes {
+  width: 300px;
+  flex-shrink: 0;
+  padding-top: 44px;
+}
+.notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.notes-head h2 { font-size:12px; font-weight:700; color:rgba(255,255,255,0.7); letter-spacing:0.04em; text-transform:uppercase; }
+.replay-btn {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  padding: 4px 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  background: none;
+  font-family: inherit;
+  color: #00A7A0;
+  border-color: #00A7A080;
+  transition: background 0.15s;
+}
+.replay-btn:hover { background: rgba(0,167,160,0.08); }
+
+.state-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.stab {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.stab.active { background: rgba(0,167,160,0.18); color: #00A7A0; border-color: rgba(0,167,160,0.35); }
+
+.note-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.note-card-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.note-card-title::before {
+  content: '';
+  display: block;
+  width: 3px; height: 11px;
+  background: #00A7A0;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.note-item {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.45);
+}
+.note-item:last-child { border-bottom: none; padding-bottom: 0; }
+.note-item b { color: rgba(255,255,255,0.75); display: block; margin-bottom: 2px; font-size: 11.5px; }
+
+.token-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.token-row:last-child { border-bottom: none; }
+.token-swatch {
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.token-name { font-size: 11px; color: rgba(255,255,255,0.5); flex: 1; }
+.token-val { font-size: 10px; color: rgba(255,255,255,0.3); font-family: monospace; }
+
+@media (max-width: 740px) {
+  body { flex-direction: column; align-items: center; padding: 16px; }
+  .notes { width: 100%; max-width: 375px; padding-top: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Phone ── -->
+<div class="phone-wrap">
+  <span class="phone-label">交互原型 · 可点击</span>
+  <div class="phone" id="phone">
+    <!-- Background gradient -->
+    <div class="grad" id="grad"></div>
+
+    <!-- Screens rail -->
+    <div class="screens" id="screens">
+
+      <!-- ━━━ SCREEN 1 · 选项选择 ━━━ -->
+      <div class="screen" id="s1">
+        <!-- Nav -->
+        <div class="nav">
+          <span class="nav-title">Health Agent</span>
+          <div class="nav-dots">
+            <div class="nav-dot active" id="d0"></div>
+            <div class="nav-dot pending" id="d1"></div>
+            <div class="nav-dot pending" id="d2"></div>
+            <div class="nav-dot pending" id="d3"></div>
+          </div>
+        </div>
+
+        <!-- Options -->
+        <div class="s1-content">
+          <div class="question-card">
+            <span class="grad-label">✦ 心情选择</span>
+            <p class="card-question">现在感觉怎么样？</p>
+
+            <div class="option-row" data-mood="anticipating" data-emoji="✨" data-name="跃跃欲试"
+              data-reply="这股劲正好来了。<strong>期待感是最好的起点</strong>——我们把它用对地方。" onclick="selectOption(this)">
+              <span class="opt-emoji">✨</span>
+              <div class="opt-text-wrap">
+                <div class="opt-main">跃跃欲试</div>
+                <div class="opt-sub">准备好动起来了</div>
+              </div>
+              <div class="opt-check">
+                <svg viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+
+            <div class="option-row" data-mood="determined" data-emoji="💪" data-name="这次认真"
+              data-reply="&quot;这次认真&quot;——这句话我记下了。<strong>以前停下来的坎，这次我们在计划里就绕开它。</strong>" onclick="selectOption(this)">
+              <span class="opt-emoji">💪</span>
+              <div class="opt-text-wrap">
+                <div class="opt-main">这次认真</div>
+                <div class="opt-sub">以前没坚持，但现在不同</div>
+              </div>
+              <div class="opt-check">
+                <svg viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+
+            <div class="option-row" data-mood="lost" data-emoji="🌫️" data-name="没有方向"
+              data-reply="不知道从哪开始，是最多人面对的问题。<strong>没关系，你来说情况，我来帮你理出头绪。</strong>" onclick="selectOption(this)">
+              <span class="opt-emoji">🌫️</span>
+              <div class="opt-text-wrap">
+                <div class="opt-main">没有方向</div>
+                <div class="opt-sub">想动，但不知从哪开始</div>
+              </div>
+              <div class="opt-check">
+                <svg viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+
+            <div class="option-row" data-mood="stressed" data-emoji="😮‍💨" data-name="需要出口"
+              data-reply="运动是最好的减压方式之一。<strong>我会把训练强度控制在合理范围——它是出口，不是另一个压力。</strong>" onclick="selectOption(this)">
+              <span class="opt-emoji">😮‍💨</span>
+              <div class="opt-text-wrap">
+                <div class="opt-main">需要出口</div>
+                <div class="opt-sub">压力大，想靠运动释放</div>
+              </div>
+              <div class="opt-check">
+                <svg viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+
+            <div class="option-row" data-mood="body" data-emoji="🌱" data-name="身体在提醒我"
+              data-reply="身体会告诉你它需要什么——<strong>你听到了，来了。</strong>我们从你现在的状态出发，不着急。" onclick="selectOption(this)">
+              <span class="opt-emoji">🌱</span>
+              <div class="opt-text-wrap">
+                <div class="opt-main">身体在提醒我</div>
+                <div class="opt-sub">精力下降，该做点什么了</div>
+              </div>
+              <div class="opt-check">
+                <svg viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom -->
+        <div class="s1-bottom">
+          <button class="btn-next" id="s1Next" disabled>
+            下一步 <span class="arrow">→</span>
+          </button>
+          <button class="btn-skip">跳过</button>
+        </div>
+      </div>
+
+      <!-- ━━━ SCREEN 2 · 反馈态 ━━━ -->
+      <div class="screen" id="s2">
+        <!-- Nav -->
+        <div class="nav">
+          <span class="nav-title">Health Agent</span>
+          <div class="nav-dots">
+            <div class="nav-dot done"></div>
+            <div class="nav-dot active"></div>
+            <div class="nav-dot pending"></div>
+            <div class="nav-dot pending"></div>
+          </div>
+        </div>
+
+        <!-- Feedback content -->
+        <div class="s2-content" id="s2Content">
+          <div class="s2-confirmed" id="s2Confirmed">
+            <span class="confirmed-label">✦ 你选择了</span>
+            <span class="confirmed-emoji" id="cEmoji">✨</span>
+            <div class="confirmed-name" id="cName">跃跃欲试</div>
+
+            <div class="divider"></div>
+
+            <div class="agent-response">
+              <div class="agent-tag">
+                <div class="agent-dot"></div>
+                <span class="agent-from">Health Agent</span>
+              </div>
+              <p class="agent-text" id="agentText">
+                这股劲正好来了。<strong>期待感是最好的起点</strong>——我们把它用对地方。
+              </p>
+
+              <div class="next-teaser">
+                <div class="teaser-label">接下来</div>
+                <div class="teaser-q">你最想解决的是哪一件事？</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom -->
+        <div class="bottom-cta">
+          <button class="btn-next" onclick="goNext()">
+            继续 <span class="arrow">→</span>
+          </button>
+          <button class="btn-skip">跳过</button>
+        </div>
+      </div>
+
+    </div><!-- /screens -->
+  </div><!-- /phone -->
+</div><!-- /phone-wrap -->
+
+
+<!-- ── Notes Panel ── -->
+<div class="notes">
+  <div class="notes-head">
+    <h2>设计说明</h2>
+    <button class="replay-btn" onclick="replay()">↺ 重新演示</button>
+  </div>
+
+  <div class="state-tabs">
+    <button class="stab active" onclick="showTab(0,this)">选项页</button>
+    <button class="stab" onclick="showTab(1,this)">反馈态</button>
+    <button class="stab" onclick="showTab(2,this)">Token</button>
+  </div>
+
+  <div id="tab0">
+    <div class="note-card">
+      <div class="note-card-title">选项卡片的设计规则</div>
+      <div class="note-item">
+        <b>选项行结构</b>
+        Emoji 图标 + 粗体主文 + 副文说明 + 右侧 check（默认隐藏）。三列信息对应不同权重：17px Bold / 12px Regular。
+      </div>
+      <div class="note-item">
+        <b>悬停 / 点击反馈</b>
+        hover：背景从 White/6 → White/10，边框加深。tap：scale(0.98) + 背景加亮。选中：scale(1.02)，check 圈弹入，其他行 dimmed（opacity 0.28）。
+      </div>
+      <div class="note-item">
+        <b>Card 背景</b>
+        Glass 效果：rgba(255,255,255,0.07) + backdrop-filter blur(24px)，保持渐变背景可见。
+      </div>
+      <div class="note-item">
+        <b>渐变标签 ✦</b>
+        12px Medium，品牌三色 clip-text。与 Figma 设计规范中 "心情选择" 标签一致。
+      </div>
+    </div>
+    <div class="note-card">
+      <div class="note-card-title">下一步按钮状态</div>
+      <div class="note-item">
+        <b>未选中（disabled）</b>opacity 0.4，不可点击，防止用户跳过选择。
+      </div>
+      <div class="note-item">
+        <b>已选中（enabled）</b>opacity 1，点击后触发过渡到反馈态，延迟 200ms（让确认动画先完成）。
+      </div>
+    </div>
+  </div>
+
+  <div id="tab1" style="display:none">
+    <div class="note-card">
+      <div class="note-card-title">反馈态的设计逻辑</div>
+      <div class="note-item">
+        <b>为什么要有反馈页</b>
+        选项 → 下一题 之间缺少"被接住"的感受。反馈页让 Agent 对选择做出回应，建立对话感而非表单感。
+      </div>
+      <div class="note-item">
+        <b>确认状态 —— 选择留存</b>
+        情绪名称保留并放大（44px Bold），Emoji 同步展示，配合 ✦ 你选择了 的小标签，让用户感受到"被看见"。
+      </div>
+      <div class="note-item">
+        <b>Agent 回应 —— 不是提示，是理解</b>
+        回应文字引用用户的选择，使用第二人称，针对每种情绪定制。有强调（bold）区分重点信息。
+      </div>
+      <div class="note-item">
+        <b>下一问预告 —— 减少不确定感</b>
+        "接下来" 小卡片提示即将进入的问题，降低用户对流程长度的焦虑。视觉权重低于 Agent 回应。
+      </div>
+    </div>
+    <div class="note-card">
+      <div class="note-card-title">动画节奏（时间轴）</div>
+      <div class="note-item"><b>0ms</b>屏幕滑入（screens rail 位移）</div>
+      <div class="note-item"><b>+100ms</b>✦ 标签淡入 + 上移</div>
+      <div class="note-item"><b>+200ms</b>Emoji 弹入（scale 0.6 → 1，spring easing）</div>
+      <div class="note-item"><b>+300ms</b>情绪名称淡入 + 上移</div>
+      <div class="note-item"><b>+500ms</b>分隔线展开（scaleX 0 → 1）</div>
+      <div class="note-item"><b>+600ms</b>Agent 回应整体淡入 + 上移</div>
+      <div class="note-item"><b>+850ms</b>下一问预告卡片淡入</div>
+    </div>
+  </div>
+
+  <div id="tab2" style="display:none">
+    <div class="note-card">
+      <div class="note-card-title">使用到的 Token</div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:linear-gradient(135deg,#0D9EAA,#3B1F9A,#FF6A4B)"></div>
+        <span class="token-name">Background Gradient</span>
+        <span class="token-val">220deg</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.11)"></div>
+        <span class="token-name">Glass Card</span>
+        <span class="token-val">White/7 + blur</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:#000"></div>
+        <span class="token-name">CTA Button</span>
+        <span class="token-val">#000000</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:#00A7A0"></div>
+        <span class="token-name">Color/Oxygen</span>
+        <span class="token-val">#00A7A0</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:#6D51F4"></div>
+        <span class="token-name">Color/Sleep</span>
+        <span class="token-val">#6D51F4</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:#FF6A4B"></div>
+        <span class="token-name">Color/Alert</span>
+        <span class="token-val">#FF6A4B</span>
+      </div>
+    </div>
+    <div class="note-card">
+      <div class="note-card-title">字体规格</div>
+      <div class="note-item"><b>情绪名（大）</b>PingFang VF Bold 44px / lh 1.1</div>
+      <div class="note-item"><b>Agent 回应</b>PingFang VF Regular 16px / lh 1.65</div>
+      <div class="note-item"><b>选项主文</b>PingFang VF Bold 17px / lh 1.3</div>
+      <div class="note-item"><b>选项副文</b>PingFang VF Regular 12px</div>
+      <div class="note-item"><b>渐变标签</b>PingFang VF Medium 12px / clip-text</div>
+    </div>
+  </div>
+</div><!-- /notes -->
+
+<script>
+let selectedOption = null;
+let currentScreen = 0;
+
+function selectOption(el) {
+  // Already in transition
+  if (currentScreen === 1) return;
+
+  selectedOption = el;
+
+  // Visual feedback: selecting state
+  el.classList.add('selecting');
+  setTimeout(() => {
+    el.classList.remove('selecting');
+    el.classList.add('confirmed');
+    // Dim others
+    document.querySelectorAll('.option-row').forEach(r => {
+      if (r !== el) r.classList.add('dimmed');
+    });
+    // Enable next button
+    document.getElementById('s1Next').disabled = false;
+    document.getElementById('s1Next').onclick = goToFeedback;
+  }, 180);
+}
+
+function goToFeedback() {
+  if (!selectedOption) return;
+
+  // Populate feedback screen
+  const emoji  = selectedOption.dataset.emoji;
+  const name   = selectedOption.dataset.name;
+  const reply  = selectedOption.dataset.reply;
+
+  document.getElementById('cEmoji').textContent = emoji;
+  document.getElementById('cName').textContent  = name;
+  document.getElementById('agentText').innerHTML = reply;
+
+  // Slide to screen 2
+  document.getElementById('screens').style.transform = 'translateX(-375px)';
+  currentScreen = 1;
+
+  // Trigger entrance animations
+  setTimeout(() => {
+    document.getElementById('s2Content').classList.add('s2-active');
+  }, 80);
+
+  // Update notes panel
+  document.querySelectorAll('.stab')[1].click();
+}
+
+function goNext() {
+  // Placeholder: loop back / show "completed" state
+  replay();
+}
+
+function replay() {
+  // Reset everything
+  currentScreen = 0;
+  selectedOption = null;
+  document.getElementById('screens').style.transform = '';
+  document.getElementById('s2Content').classList.remove('s2-active');
+  document.querySelectorAll('.option-row').forEach(r => {
+    r.classList.remove('confirmed', 'dimmed', 'selecting');
+  });
+  const nextBtn = document.getElementById('s1Next');
+  nextBtn.disabled = true;
+  nextBtn.onclick = null;
+  document.querySelectorAll('.stab')[0].click();
+}
+
+function showTab(idx, btn) {
+  ['tab0','tab1','tab2'].forEach((id,i) => {
+    document.getElementById(id).style.display = i === idx ? '' : 'none';
+  });
+  document.querySelectorAll('.stab').forEach((b,i) => {
+    b.classList.toggle('active', i === idx);
+  });
+}
+</script>
+</body>
+</html>
