@@ -62,6 +62,24 @@
         ]
       },
       {
+        "tab": "设计规范",
+        "groups": [
+          {
+            "group": "语言基础",
+            "pages": [
+              "design-system/principles",
+              "design-system/tokens"
+            ]
+          },
+          {
+            "group": "组件库",
+            "pages": [
+              "design-system/components"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "研究参考",
         "groups": [
           {

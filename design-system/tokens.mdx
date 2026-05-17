@@ -1,0 +1,166 @@
+---
+title: 设计 Token
+description: Health Agent 设计语言的基础变量——色彩、字体、圆角、间距与层次
+---
+
+## 色彩系统
+
+设计使用两套配色逻辑并存：**实色品牌色**（用于卡片、图标、状态）与**透明度语义色**（用于叠加层、分隔线、副文本）。
+
+### 品牌色板
+
+| Token | 色值 | 用途 |
+|---|---|---|
+| `Color/Ink` | `#111713` | 主色调——导航背景、深色按钮、技能 Dock |
+| `Color/Oxygen` | `#00A7A0` | 运动/动起来 类别主色、Timeline 激活节点 |
+| `Color/Alert` | `#FF6A4B` | 减脂/消耗 类别色、警告、燃烧指标 |
+| `Color/Sleep` | `#6E50FF` | 睡眠类别色 |
+| `Color/Surface` | `#F8FAF4` | 白色卡片背景（轻微暖调） |
+| `Color/Card` | `#DDE5DE` | 卡片边框、分隔线 |
+| `Color/Space` | `#0D0E14` | 最深层背景，用于全屏暗色页面 |
+| `Color/White` | `#FFFFFF` | 纯白，sheet 背景、亮色 Timeline 节点 |
+| `Color/Background` | `#F7F7F7` | 页面级背景（浅灰） |
+
+### 透明度语义色
+
+```
+黑色叠加（亮色模式）
+  Black/5   rgba(0,0,0,0.05)   —— 输入框底色、Segment 容器
+  Black/40  rgba(0,0,0,0.40)   —— 辅助文字（副标题、占位符）
+  Black/60  rgba(0,0,0,0.60)   —— 次要文字（时间戳）
+
+白色叠加（深色卡片/暗色模式）
+  White/5   rgba(255,255,255,0.05)  —— 深色卡片内选项行背景
+  White/20  rgba(255,255,255,0.20)  —— 深色卡片内选项行边框
+```
+
+### 品牌渐变
+
+这两条渐变是产品的视觉签名，在 Hero Card 与 Onboarding 背景中高频出现。
+
+```css
+/* Hero Card 背景渐变（从右到左：橙红 → 深紫 → 青蓝） */
+background: linear-gradient(270deg, #FF6A4B 0%, #6D51F4 50%, #0D9EAA 100%);
+
+/* Hero Card 深色叠加（使文字清晰可读） */
+background: radial-gradient(
+  ellipse at center top,
+  rgba(0,0,0,1) 0%,
+  rgba(26,25,31,0.6) 92.5%,
+  rgba(0,0,0,0.2) 100%
+);
+
+/* 品牌标签文字渐变（同色系正向方向） */
+background: linear-gradient(95.5deg, #00A7A0 0%, #6D51F4 23.5%, #FF6A4B 45%);
+background-clip: text;
+color: transparent;
+```
+
+---
+
+## 字体系统
+
+主字体：**PingFang VF**（可变字重，支持 Regular → Bold 的连续过渡）。
+
+英文副标题使用等宽风格（`Physical AI Coaching Engine_`），增添科技感。
+
+### 字阶
+
+| Token | 字重 | 字号 | 行高 | 使用场景 |
+|---|---|---|---|---|
+| `页面标题` | Bold 700 | 30px | 40px | 导航栏主标题（今日、你好） |
+| `章节标题` | Bold 700 | 26px | 36px | Hero Card 问题文字 |
+| `卡片标题` | Bold 700 | 20px | 28px | 白色卡片标题、Timeline 事件名 |
+| `大数值` | Bold 700 | 20px | 28px | 运动分钟数、卡路里等指标 |
+| `正文说明` | Regular 400 | 14–15px | 21–22px | Hero Card 描述、选项副文本 |
+| `标签与状态` | Medium 500 | 12px | 18px | 时间戳、Badge、筛选标签 |
+| `数值单位` | Medium 500 | 12px | — | 指标单位（分钟、千卡） |
+
+### 字重对应规则
+
+```
+轻信息（辅助） → Regular (400)
+中等信息        → Medium  (500)
+强调/标题       → Bold    (700)
+```
+
+---
+
+## 圆角系统
+
+产品圆角极度统一，核心原则：**越大的容器，圆角越大**。
+
+| 元素类型 | 圆角值 |
+|---|---|
+| 全屏弹出 sheet（底部） | `32px` 仅顶部两角 |
+| Hero Card / 主卡片 | `32px` |
+| 选项行 / 分类按钮 | `32px` |
+| Segment 控件容器 | `32px` |
+| Segment 选中项 | `24px` |
+| 白色小卡片 | `24px` |
+| 小按钮 / Pill | `48px`（全圆角） |
+| 分类图标背景 | `28px` |
+| Timeline 节点图标 | `48px`（宽 48 高 56，视觉全圆） |
+| 头像 | `50%` |
+
+---
+
+## 间距系统
+
+基准单位 **8px**，所有间距为 8 的倍数。
+
+| 用途 | 数值 |
+|---|---|
+| 页面水平内边距 | `16px` |
+| Hero Card 内边距 | `24px` |
+| 卡片内组件间距 | `16px` |
+| 两卡片之间间距 | `24px` |
+| Dock 内边距 | `20px` |
+| Segment 内容区域 padding | `4px` |
+| Timeline 图标与文字间距 | `12px` |
+| 状态行文字内部间距 | `4px` |
+
+---
+
+## 阴影与分层
+
+```css
+/* Coach Sheet / 底部 Dock 投影 */
+box-shadow:
+  0px -1px 0px 0px #DDE5DE,    /* 顶部分隔线 */
+  0px 0px 32px 0px rgba(0,0,0,0.08);  /* 环境光晕 */
+
+/* 白色卡片（轻投影） */
+box-shadow: 0px 1px 4px rgba(0,0,0,0.05);
+
+/* Hero Card 边框（在暗色渐变上增加玻璃质感） */
+border: 1px solid rgba(216,249,255,0.18);
+```
+
+### 层级关系
+
+```
+z-index 示意（低 → 高）
+  页面背景 #F7F7F7
+  ↓
+  Hero Card + 白色卡片（同层，垂直排列）
+  ↓
+  Timeline 内容区
+  ↓
+  底部 Dock（fixed 底部，glass 叠加）
+```
+
+---
+
+## Glass 效果规范
+
+用于 Dock 输入区域与某些浮层按钮。
+
+```css
+/* Glass 容器 */
+backdrop-filter: blur(20px) saturate(180%);
+background: rgba(255,255,255,0.72);
+
+/* Glass 内部分隔 */
+border: 1px solid rgba(255,255,255,0.35);
+```
