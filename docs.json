@@ -81,6 +81,17 @@
         ]
       },
       {
+        "tab": "内容规范",
+        "groups": [
+          {
+            "group": "文案标准",
+            "pages": [
+              "writing/style-guide"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "研究参考",
         "groups": [
           {
