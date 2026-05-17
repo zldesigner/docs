@@ -17,6 +17,7 @@
             "group": "项目介绍",
             "pages": [
               "index",
+              "overview/prd",
               "overview/vision",
               "overview/architecture"
             ]
